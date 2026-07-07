@@ -1,0 +1,43 @@
+# Virtualenv
+venv/
+.venv/
+
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Data (raw CSVs are large)
+data/*.csv
+data/*.parquet
+data/*.db
+data/*.duckdb
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model checkpoints
+*.pth
+*.pt
+*.bin
+
+# Lock files
+uv.lock
+requirements.lock

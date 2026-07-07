@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "difficulty": "easy",
+    "seed_node": 232947878,
+    "seed_class": 1,
+    "seed_timestep": 1,
+    "depth": 3,
+    "budget": 500,
+    "node_count": 5,
+    "edge_count": 4,
+    "description": "Illicit tx with clear peel chain (>3 hops) and few branches"
+  },
+  "nodes": [
+    {
+      "data": {
+        "id": "27533958",
+        "label": "27533958",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1
+      }
+    },
+    {
+      "data": {
+        "id": "230464556",
+        "label": "230464556",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1
+      }
+    },
+    {
+      "data": {
+        "id": "230464746",
+        "label": "230464746",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1
+      }
+    },
+    {
+      "data": {
+        "id": "232947876",
+        "label": "232947876",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1
+      }
+    },
+    {
+      "data": {
+        "id": "232947878",
+        "label": "232947878",
+        "class": 1,
+        "class_label": "illicit",
+        "color": "#ef4444",
+        "timestep": 1
+      }
+    }
+  ],
+  "edges": [
+    {
+      "data": {
+        "id": "e_232947878_232947876",
+        "source": "232947878",
+        "target": "232947876"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230464746_230464556",
+        "source": "230464746",
+        "target": "230464556"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230464556_232947876",
+        "source": "230464556",
+        "target": "232947876"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230464556_27533958",
+        "source": "230464556",
+        "target": "27533958"
+      }
+    }
+  ]
+}
