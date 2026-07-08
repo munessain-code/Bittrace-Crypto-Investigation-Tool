@@ -41,3 +41,4 @@ Thumbs.db
 # Lock files
 uv.lock
 requirements.lock
+src/bittrace.egg-info/

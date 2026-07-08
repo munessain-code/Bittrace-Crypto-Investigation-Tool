@@ -1,0 +1,480 @@
+{
+  "nodes": [
+    {
+      "data": {
+        "id": "232956032",
+        "label": "232956032",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956033",
+        "label": "232956033",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956034",
+        "label": "232956034",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "24155910",
+        "label": "24155910",
+        "class": 1,
+        "class_label": "illicit",
+        "color": "#ef4444",
+        "timestep": 1,
+        "hop": 0,
+        "is_seed": true,
+        "shape": "diamond",
+        "size": 20
+      }
+    },
+    {
+      "data": {
+        "id": "232956040",
+        "label": "232956040",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "2893846",
+        "label": "2893846",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "211053597",
+        "label": "211053597",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "230683551",
+        "label": "230683551",
+        "class": 2,
+        "class_label": "licit",
+        "color": "#22c55e",
+        "timestep": 1,
+        "hop": 1,
+        "is_seed": false,
+        "size": 11
+      }
+    },
+    {
+      "data": {
+        "id": "230565413",
+        "label": "230565413",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "230454693",
+        "label": "230454693",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "230454697",
+        "label": "230454697",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "89273",
+        "label": "89273",
+        "class": 2,
+        "class_label": "licit",
+        "color": "#22c55e",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232947900",
+        "label": "232947900",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232339923",
+        "label": "232339923",
+        "class": 2,
+        "class_label": "licit",
+        "color": "#22c55e",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232906328",
+        "label": "232906328",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "3110874",
+        "label": "3110874",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232898395",
+        "label": "232898395",
+        "class": 2,
+        "class_label": "licit",
+        "color": "#22c55e",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "230429790",
+        "label": "230429790",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "80855903",
+        "label": "80855903",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "10437353",
+        "label": "10437353",
+        "class": 2,
+        "class_label": "licit",
+        "color": "#22c55e",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956023",
+        "label": "232956023",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956027",
+        "label": "232956027",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956030",
+        "label": "232956030",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    },
+    {
+      "data": {
+        "id": "232956031",
+        "label": "232956031",
+        "class": 3,
+        "class_label": "unknown",
+        "color": "#6b7280",
+        "timestep": 1,
+        "hop": 2,
+        "is_seed": false,
+        "size": 8
+      }
+    }
+  ],
+  "edges": [
+    {
+      "data": {
+        "id": "e_24155910_230683551",
+        "source": "24155910",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956030_230683551",
+        "source": "232956030",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_2893846_230683551",
+        "source": "2893846",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956027_230683551",
+        "source": "232956027",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232947900_230683551",
+        "source": "232947900",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230565413_230683551",
+        "source": "230565413",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956032_230683551",
+        "source": "232956032",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_80855903_230683551",
+        "source": "80855903",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_89273_230683551",
+        "source": "89273",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230454697_230683551",
+        "source": "230454697",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956031_230683551",
+        "source": "232956031",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_3110874_230683551",
+        "source": "3110874",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956034_230683551",
+        "source": "232956034",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230429790_230683551",
+        "source": "230429790",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232906328_230683551",
+        "source": "232906328",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_211053597_230683551",
+        "source": "211053597",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_230454693_230683551",
+        "source": "230454693",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_10437353_230683551",
+        "source": "10437353",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956040_230683551",
+        "source": "232956040",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956023_230683551",
+        "source": "232956023",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232898395_230683551",
+        "source": "232898395",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232956033_230683551",
+        "source": "232956033",
+        "target": "230683551"
+      }
+    },
+    {
+      "data": {
+        "id": "e_232339923_230683551",
+        "source": "232339923",
+        "target": "230683551"
+      }
+    }
+  ]
+}
