@@ -1,77 +1,76 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import { GraphExplorer } from "@/components/GraphExplorer";
 import { MacroOverview } from "@/components/MacroOverview";
-import { StoryPanel } from "@/components/StoryPanel";
 
-type Tab = "macro" | "explorer" | "story";
+// Dynamically import graph-dependent components (no SSR)
+const GraphExplorer = dynamic(
+  () => import("@/components/GraphExplorer"),
+  { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading graph…</div> },
+);
+const StoryPanel = dynamic(
+  () => import("@/components/StoryPanel"),
+  { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading stories…</div> },
+);
+
+type Tab = "explorer" | "macro" | "story";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<Tab>("explorer");
-  const [timestep, setTimestep] = useState<number | null>(null);
-
-  const tabs: { key: Tab; label: string; icon: string }[] = [
-    { key: "explorer", label: "Explorer", icon: "🔍" },
-    { key: "macro", label: "Macro", icon: "📊" },
-    { key: "story", label: "Story Mode", icon: "📖" },
-  ];
+  const [tab, setTab] = useState<Tab>("explorer");
+  const [selectedTime, setSelectedTime] = useState<number | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col h-screen bg-[var(--bg-primary)]">
+    <div className="flex flex-col h-screen bg-background text-primary font-sans overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-color)]">
+      <header className="flex items-center justify-between px-6 py-3 bg-surface border-b border-border">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold tracking-tight">
-            <span className="text-blue-500">Bit</span>Trace
-          </h1>
-          <span className="text-xs text-[var(--text-secondary)] px-2 py-0.5 bg-[var(--bg-primary)] rounded-full">
-            Elliptic++
+          <span className="text-lg font-bold text-accent">BitTrace</span>
+          <span className="text-xs text-muted px-2 py-0.5 bg-slate-800 rounded-full">
+            Graph Explorer
           </span>
         </div>
-
-        {/* Tabs */}
-        <nav className="flex gap-1">
-          {tabs.map((tab) => (
+        <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+          {(["explorer", "macro", "story"] as Tab[]).map((t) => (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                activeTab === tab.key
-                  ? "bg-blue-600/20 text-blue-400 font-medium"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel)]"
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                tab === t
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted hover:text-primary"
               }`}
             >
-              {tab.icon} {tab.label}
+              {t === "explorer" && "🔍 Explorer"}
+              {t === "macro" && "📊 Macro"}
+              {t === "story" && "📖 Story Mode"}
             </button>
           ))}
         </nav>
-
-        {/* Timestep scrubber */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-[var(--text-secondary)]">Timestep:</label>
-          <input
-            type="range"
-            min={1}
-            max={49}
-            value={timestep || 1}
-            onChange={(e) => setTimestep(Number(e.target.value))}
-            className="w-24 accent-blue-500"
-          />
-          <span className="text-xs w-5 text-center font-mono">{timestep || "—"}</span>
-        </div>
       </header>
 
       {/* Content */}
       <main className="flex-1 overflow-hidden">
-        {activeTab === "macro" && (
-          <MacroOverview onTimestepSelect={(ts) => { setTimestep(ts); setActiveTab("explorer"); }} />
+        {tab === "explorer" && (
+          <GraphExplorer
+            selectedTime={selectedTime}
+            selectedClass={selectedClass}
+          />
         )}
-        {activeTab === "explorer" && (
-          <GraphExplorer timestep={timestep} />
+        {tab === "macro" && (
+          <div className="h-full">
+            <MacroOverview
+              onTimestepSelect={setSelectedTime}
+              onClassSelect={setSelectedClass}
+              onTabSelect={() => setTab("explorer")}
+            />
+          </div>
         )}
-        {activeTab === "story" && (
-          <StoryPanel />
+        {tab === "story" && (
+          <div className="h-full">
+            <StoryPanel />
+          </div>
         )}
       </main>
     </div>

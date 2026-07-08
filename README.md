@@ -101,13 +101,13 @@ cd /home/eduardo/Documents/bittrace
 source venv/bin/activate
 uvicorn api.main:app --port 8000 --reload
 
-# Terminal 2 — Next.js dashboard (port 3000)
+# Terminal 2 — Next.js dashboard (port 3001)
 cd dashboard
 npm install  # first time only
 npm run dev
 ```
 
-Open **http://localhost:3000** in your browser.
+Open **http://localhost:3001** in your browser.
 
 ### Dashboard tabs
 
@@ -145,7 +145,7 @@ bittrace/
 │   ├── stories/              # YAML case studies, loader, schema
 │   └── ai/                   # LLM investigation pipeline
 ├── api/                      # FastAPI endpoints (port 8000)
-├── dashboard/                # Next.js dashboard (port 3000)
+├── dashboard/                # Next.js dashboard (port 3001)
 ├── docs/                     # Methodology docs + story visualizations
 ├── tests/                    # pytest unit tests (77 passing)
 └── pyproject.toml

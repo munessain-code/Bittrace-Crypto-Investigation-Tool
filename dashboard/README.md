@@ -8,7 +8,7 @@ Next.js Graph Explorer for interactive money-flow tracing on Elliptic++.
 # 1. Install dependencies
 npm install
 
-# 2. Start the dev server (port 3000)
+# 2. Start the dev server (port 3001)
 npm run dev
 ```
 
