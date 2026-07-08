@@ -93,22 +93,61 @@ The [Elliptic++ dataset](https://github.com/git-disl/EllipticPlusPlus) provides 
 | Transactions (RF) | 98.6% | 72.7% |
 | Actors (RF) | 92.1% | 80.2% |
 
+## Running the Explorer
+
+```bash
+# Terminal 1 — FastAPI backend (port 8000)
+cd /home/eduardo/Documents/bittrace
+source venv/bin/activate
+uvicorn api.main:app --port 8000 --reload
+
+# Terminal 2 — Next.js dashboard (port 3000)
+cd dashboard
+npm install  # first time only
+npm run dev
+```
+
+Open **http://localhost:3000** in your browser.
+
+### Dashboard tabs
+
+| Tab | What it does |
+|---|---|
+| **Explorer** | Force-directed graph. Click nodes → inspect, trace upstream/downstream, expand neighbors. |
+| **Macro** | Illicit heatmap by timestep (click to filter), class distribution, class-to-class edge flow. |
+| **Story Mode** | Step-by-step investigation stories synced with graph highlights. |
+
+### API endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/graph/overview` | Node/edge counts, class breakdown, timestep distribution |
+| GET | `/graph/node/{id}` | Attributes, degrees, class for a single node |
+| GET | `/graph/expand?node_id=&depth=` | k-hop BFS neighbor expansion (Cytoscape JSON) |
+| GET | `/graph/trace?node_id=&direction=&max_hops=` | Directed money-flow trace |
+| GET | `/graph/subgraph/{case_id}` | Precomputed story subgraph with step annotations |
+| GET | `/stories` | List all investigation stories |
+| GET | `/stories/{id}` | Full story with step-by-step structure |
+
 ## Project Structure
 
 ```
 bittrace/
 ├── data/                     # Elliptic++ CSVs (gitignored)
 │   └── download.py           # Dataset download script
-├── notebooks/                # Jupyter notebooks for EDA & experiments
+├── notebooks/                # Python scripts for EDA & experiments
 ├── src/
 │   ├── data/                 # DuckDB loaders, schema
 │   ├── features/             # Graph feature engineering
 │   ├── models/               # RF, GCN, GAT models
 │   ├── explain/              # SHAP + subgraph explanations
+│   ├── graph/                # Graph builders, tracing, export, patterns
+│   ├── stories/              # YAML case studies, loader, schema
 │   └── ai/                   # LLM investigation pipeline
-├── api/                      # FastAPI endpoints
-├── dashboard/                # Next.js dashboard (Phase 6)
-├── tests/                    # pytest unit tests
+├── api/                      # FastAPI endpoints (port 8000)
+├── dashboard/                # Next.js dashboard (port 3000)
+├── docs/                     # Methodology docs + story visualizations
+├── tests/                    # pytest unit tests (77 passing)
 └── pyproject.toml
 ```
 
@@ -116,13 +155,14 @@ bittrace/
 
 | Phase | Deliverable | Status |
 |-------|-------------|--------|
-| **1. Foundation** | Data pipeline, DuckDB loaders, EDA notebooks | 🔄 In Progress |
-| **2. Baselines** | RF classifier matching paper metrics | ⏳ Pending |
-| **3. Graph ML** | GCN/GAT on tx & addr graphs | ⏳ Pending |
-| **4. Explainability** | SHAP + k-hop subgraph extraction | ⏳ Pending |
-| **5. AI Investigator** | LLM reports with graph context | ⏳ Pending |
-| **6. Dashboard + API** | FastAPI + Next.js UI | ⏳ Pending |
-| **7. Polish** | README, demo video, citation | ⏳ Pending |
+| **1. Foundation** | Data pipeline, DuckDB loaders, EDA | ✅ Done |
+| **2. Baselines** | RF classifier (F1 0.826) | ✅ Done |
+| **3. Graph ML** | GCN/GAT on tx & addr graphs | ✅ Done |
+| **4. Explainability** | SHAP + k-hop subgraph extraction | ✅ Done |
+| **5. AI Investigator** | LLM reports with graph context | ✅ Done |
+| **6. Dashboard + API** | FastAPI + Next.js UI | ✅ Done |
+| **7. Investigation Stories** | YAML cases, step-through narratives | ✅ Done |
+| **8. Graph Explorer** | Interactive dashboard, trace, story mode | ✅ Done |
 
 ## Citation
 

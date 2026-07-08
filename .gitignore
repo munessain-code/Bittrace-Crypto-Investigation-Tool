@@ -42,3 +42,4 @@ Thumbs.db
 uv.lock
 requirements.lock
 src/bittrace.egg-info/
+dashboard/node_modules
