@@ -1,0 +1,76 @@
+---
+id: peel-chain
+title: "The Peel Chain — Linear Layering"
+difficulty: EASY
+seed_node_id: 10000476
+pattern: peel_chain
+narrative: >
+  This story traces a classic **peel chain** — a money-layering pattern where
+  illicit funds flow through a linear sequence of transactions, each passing
+  the balance forward to the next node. Peel chains are structurally simple
+  (in-degree = 1, out-degree = 1 for intermediate nodes), making them easy
+  to detect but still widely used in the wild. Our seed node is part of a
+  21-hop chain where every node is flagged as illicit, demonstrating a
+  high-confidence laundering pipeline.
+
+steps:
+  - step_num: 1
+    title: "Identify the seed"
+    description: >
+      Start at transaction 10000476 — an illicit node flagged by the
+      Elliptic++ labels. It has in-degree = 1 and out-degree = 1, meaning
+      it simply forwards funds to the next hop. This is the hallmark of a
+      peel chain intermediate node.
+    highlight_nodes: [10000476]
+    highlight_edges: []
+    trace_direction: downstream
+
+  - step_num: 2
+    title: "Trace the first few hops"
+    description: >
+      Follow the downstream edge from 10000476 through 163822045 and
+      163822047. Each intermediate node passes the full balance forward
+      with no branching. All three are illicit, forming the start of a
+      clear layering pipeline.
+    highlight_nodes: [10000476, 163822045, 163822047, 100252189, 163822268]
+    highlight_edges:
+      - [10000476, 163822045]
+      - [163822045, 163822047]
+      - [163822047, 100252189]
+      - [100252189, 163822268]
+    trace_direction: downstream
+
+  - step_num: 3
+    title: "The full chain"
+    description: >
+      Extending the trace reveals 20 consecutive illicit nodes in a
+      straight line. No licit nodes mix in — this is a clean peel chain
+      where every hop is labeled class = 1 (illicit). Such chains are
+      EASY cases because the structural signal (degree-2 linear path)
+      combined with label consistency leaves no ambiguity.
+    highlight_nodes:
+      [10000476, 163822045, 163822047, 100252189, 163822268,
+       15254893, 163822545, 79797023, 130248559, 163822560]
+    highlight_edges:
+      - [10000476, 163822045]
+      - [163822045, 163822047]
+      - [163822047, 100252189]
+      - [100252189, 163822268]
+      - [163822268, 15254893]
+      - [15254893, 163822545]
+      - [163822545, 79797023]
+      - [79797023, 130248559]
+      - [130248559, 163822560]
+    trace_direction: downstream
+
+  - step_num: 4
+    title: "Chain termination"
+    description: >
+      The chain eventually terminates when a node fans out to multiple
+      recipients or hits a dead end. At that point the laundered funds
+      are either consolidated for cash-out or dispersed to avoid further
+      tracking. The structural endpoint marks the end of the peel chain.
+    highlight_nodes:
+      [163867295, 163867298, 163867302, 163867307, 163867589, 124314892, 163867597]
+    highlight_edges: []
+    trace_direction: downstream

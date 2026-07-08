@@ -1,0 +1,69 @@
+---
+id: fan-out-split
+title: "Fan-Out Split — Obfuscation via Dispersion"
+difficulty: AVERAGE
+seed_node_id: 32054179
+pattern: fan_out
+narrative: >
+  This story investigates a **fan-out split** pattern: an illicit
+  transaction (32054179) that distributes funds to multiple downstream
+  recipients in a single hop. By splitting the balance across several
+  outputs, the sender increases the cost of following each trail
+  individually. This is a common obfuscation technique — harder to trace
+  than a simple peel chain because the analyst must follow each branch
+  independently and determine whether they eventually reconverge.
+
+steps:
+  - step_num: 1
+    title: "The splitter node"
+    description: >
+      Transaction 32054179 is an illicit node (class = 1) with out-degree = 3.
+      Instead of forwarding funds to a single destination, it splits the
+      output to three separate transactions: 219542395, 218547008, and
+      33174163. This fan-out pattern suggests deliberate dispersion.
+    highlight_nodes: [32054179]
+    highlight_edges: []
+    trace_direction: downstream
+
+  - step_num: 2
+    title: "Follow each branch"
+    description: >
+      All three downstream neighbors are currently unlabeled (class = 3 /
+      unknown), meaning the ML model has low confidence on their status.
+      Each branch may lead to different laundering endpoints — some may
+      reconverge, some may exit through exchanges, and some may hit dead
+      ends. The analyst must trace each independently.
+    highlight_nodes: [32054179, 219542395, 218547008, 33174163]
+    highlight_edges:
+      - [32054179, 219542395]
+      - [32054179, 218547008]
+      - [32054179, 33174163]
+    trace_direction: downstream
+
+  - step_num: 3
+    title: "Branch depth analysis"
+    description: >
+      Extending the trace 2 hops deeper reveals whether the branches
+      reconverge (suggesting a circular pattern) or diverge toward
+      separate endpoints. Fan-out followed by fan-in is a hallmark of
+      tumbling services. Here all three branches remain unknown, making
+      this an AVERAGE difficulty case — the structural signal is clear
+      but the labels are ambiguous.
+    highlight_nodes:
+      [32054179, 219542395, 218547008, 33174163]
+    highlight_edges:
+      - [32054179, 219542395]
+      - [32054179, 218547008]
+      - [32054179, 33174163]
+    trace_direction: bidirectional
+
+  - step_num: 4
+    title: "Upstream context"
+    description: >
+      Tracing upstream from the splitter reveals where the funds originated.
+      If the upstream chain shows a peel pattern feeding into this fan-out,
+      it confirms a multi-stage laundering pipeline: peel chain → split →
+      dispersal. The upstream analysis completes the investigation picture.
+    highlight_nodes: [32054179]
+    highlight_edges: []
+    trace_direction: upstream

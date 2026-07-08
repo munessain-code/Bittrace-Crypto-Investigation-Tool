@@ -155,3 +155,61 @@ def trace_to_cytoscape(
         })
 
     return {"nodes": cy_nodes, "edges": cy_edges}
+
+
+# ---------------------------------------------------------------------------
+# Story subgraph export
+# ---------------------------------------------------------------------------
+def export_story_subgraph(
+    story: "src.stories.Story",
+    G: nx.Graph,
+    trace_result: Dict,
+) -> Dict:
+    """Export a story's subgraph as step-indexed Cytoscape JSON.
+
+    Wraps :func:`trace_to_cytoscape` and annotates each node / edge
+    with the story step that highlights it.
+
+    Args:
+        story: A :class:`~src.stories.Story` with ``steps`` containing
+            ``highlight_nodes`` and ``highlight_edges`` per step.
+        G: The full NetworkX graph (for node attributes).
+        trace_result: Output from ``trace_downstream()`` or ``trace_upstream()``
+            for the story's seed node.
+
+    Returns:
+        Cytoscape dict where each node/edge has an extra ``step`` key
+        indicating which story step highlights it.
+    """
+    cy = trace_to_cytoscape(G, trace_result)
+
+    # Build step lookup: node_id -> step_num, edge pair -> step_num
+    node_step: Dict[str, int] = {}
+    edge_step: Dict[tuple, int] = {}
+
+    for step in story.steps:
+        for nid in step.highlight_nodes:
+            node_step[str(nid)] = step.step_num
+        for e in step.highlight_edges:
+            edge_step[(str(e[0]), str(e[1]))] = step.step_num
+
+    # Annotate nodes
+    for node in cy["nodes"]:
+        nid = node["data"]["id"]
+        if nid in node_step:
+            node["data"]["step"] = node_step[nid]
+
+    # Annotate edges
+    for edge in cy["edges"]:
+        src = edge["data"]["source"]
+        dst = edge["data"]["target"]
+        key = (src, dst)
+        if key in edge_step:
+            edge["data"]["step"] = edge_step[key]
+
+    # Attach story metadata
+    return {
+        "story": story.to_dict(),
+        "nodes": cy["nodes"],
+        "edges": cy["edges"],
+    }

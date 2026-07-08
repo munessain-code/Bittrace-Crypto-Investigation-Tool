@@ -1,0 +1,85 @@
+---
+id: consolidation
+title: "The Consolidation — Fan-In Before Exit"
+difficulty: HARD
+seed_node_id: 30179316
+pattern: fan_in
+narrative: >
+  This story examines a **consolidation (fan-in)** pattern: transaction
+  30179316 is an illicit node that receives funds from 177 separate
+  upstream transactions. This massive fan-in is typical of a tumbling
+  service or darknet marketplace wallet that aggregates payments from
+  many sources before forwarding the consolidated balance downstream.
+  The HARD difficulty comes from the volume of incoming edges and the
+  mixed-label nature of predecessors (most are unlabeled / unknown),
+  making it difficult to determine the true source of the illicit funds.
+
+steps:
+  - step_num: 1
+    title: "The consolidation point"
+    description: >
+      Transaction 30179316 is flagged as illicit (class = 1) and has an
+      in-degree of 177 — the highest among illicit fan-in nodes in the
+      dataset. This extreme concentration of incoming edges is a strong
+      structural signal of a consolidation hub.
+    highlight_nodes: [30179316]
+    highlight_edges: []
+    trace_direction: upstream
+
+  - step_num: 2
+    title: "Sample the incoming flow"
+    description: >
+      Among the 177 predecessors, a sample of 15 are shown. All sampled
+      predecessors are unlabeled (class = 3 / unknown), meaning we cannot
+      easily confirm whether they are part of the laundering chain or
+      coincidental traffic. This label ambiguity is what makes this a
+      HARD case — the structural pattern is clear but the ML model
+      provides no additional signal.
+    highlight_nodes:
+      [30179316, 30179589, 30179423, 30180253, 25342845,
+       30179594, 28921375, 30179593, 30179400]
+    highlight_edges:
+      - [30179589, 30179316]
+      - [30179423, 30179316]
+      - [30180253, 30179316]
+      - [25342845, 30179316]
+      - [30179594, 30179316]
+      - [28921375, 30179316]
+      - [30179593, 30179316]
+      - [30179400, 30179316]
+    trace_direction: upstream
+
+  - step_num: 3
+    title: "Predecessor diversity"
+    description: >
+      The 177 predecessors span multiple timestep ranges, suggesting
+      that this consolidation accumulated funds over an extended period.
+      This is consistent with a marketplace escrow or tumbling service
+      that batches many small payments into a single large outbound
+      transaction. The wide predecessor set makes manual tracing
+      impractical without automated clustering.
+    highlight_nodes:
+      [30179316, 30180257, 30179832, 30179418, 30179376,
+       30179461, 30179871, 30179386]
+    highlight_edges:
+      - [30180257, 30179316]
+      - [30179832, 30179316]
+      - [30179418, 30179316]
+      - [30179376, 30179316]
+      - [30179461, 30179316]
+      - [30179871, 30179316]
+      - [30179386, 30179316]
+    trace_direction: upstream
+
+  - step_num: 4
+    title: "Downstream exit"
+    description: >
+      After consolidation, the combined funds flow downstream from
+      30179316. Following this exit edge reveals where the laundered
+      money ultimately goes — typically toward an exchange, a mixer,
+      or a cash-out node. The downstream trace completes the
+      consolidation story by showing the final destination of
+      aggregated illicit funds.
+    highlight_nodes: [30179316]
+    highlight_edges: []
+    trace_direction: downstream
