@@ -3,10 +3,20 @@
 import { useEffect, useState } from "react";
 import { api, GraphOverview } from "@/lib/graph-api";
 
+const CLASS_LABELS: Record<string, string> = {
+  "1": "illicit",
+  "2": "licit",
+  "3": "unknown",
+};
+
 export function MacroOverview({
   onTimestepSelect,
+  onClassSelect,
+  onTabSelect,
 }: {
   onTimestepSelect: (ts: number) => void;
+  onClassSelect?: (cls: string) => void;
+  onTabSelect?: () => void;
 }) {
   const [data, setData] = useState<GraphOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +57,15 @@ export function MacroOverview({
                 ? ((count / data.total_nodes) * 100).toFixed(1)
                 : "0";
               return (
-                <div key={cls} className="flex items-center gap-3">
+                <button
+                  key={cls}
+                  type="button"
+                  onClick={() => {
+                    onClassSelect?.(cls);
+                    onTabSelect?.();
+                  }}
+                  className="flex items-center gap-3 w-full text-left hover:bg-[var(--bg-primary)] rounded-lg px-1 py-0.5 transition-colors"
+                >
                   <div className={`w-3 h-3 rounded-full ${color}`} />
                   <span className="text-sm w-16">{label}</span>
                   <div className="flex-1 bg-[var(--bg-primary)] rounded-full h-4 overflow-hidden">
@@ -59,7 +77,7 @@ export function MacroOverview({
                   <span className="text-xs text-[var(--text-secondary)] w-14 text-right">
                     {pct}%
                   </span>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -74,14 +92,18 @@ export function MacroOverview({
             {Object.entries(data.class_flow)
               .sort(([, a], [, b]) => b - a)
               .slice(0, 12)
-              .map(([flow, count]) => (
-                <div key={flow} className="flex items-center justify-between text-xs">
-                  <span className="font-mono">{flow}</span>
-                  <span className="text-[var(--text-secondary)]">
-                    {count.toLocaleString()}
-                  </span>
-                </div>
-              ))}
+              .map(([flow, count]) => {
+                const [from, to] = flow.split("→");
+                const label = `${CLASS_LABELS[from] ?? from} → ${CLASS_LABELS[to] ?? to}`;
+                return (
+                  <div key={flow} className="flex items-center justify-between text-xs">
+                    <span className="font-mono">{label}</span>
+                    <span className="text-[var(--text-secondary)]">
+                      {count.toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
@@ -98,7 +120,10 @@ export function MacroOverview({
             return (
               <button
                 key={ts}
-                onClick={() => onTimestepSelect(Number(ts))}
+                onClick={() => {
+                  onTimestepSelect(Number(ts));
+                  onTabSelect?.();
+                }}
                 className="flex-1 bg-blue-600/40 hover:bg-blue-500/60 rounded-t transition-colors min-w-[4px]"
                 style={{ height: `${Math.max(pct, 2)}%` }}
                 title={`Timestep ${ts}: ${count} illicit`}

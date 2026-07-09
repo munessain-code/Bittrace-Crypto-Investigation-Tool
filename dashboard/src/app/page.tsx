@@ -6,18 +6,24 @@ import { MacroOverview } from "@/components/MacroOverview";
 
 // Dynamically import graph-dependent components (no SSR)
 const GraphExplorer = dynamic(
-  () => import("@/components/GraphExplorer"),
+  () => import("@/components/GraphExplorer").then((m) => m.GraphExplorer),
   { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading graph…</div> },
 );
+const GraphExplorer3D = dynamic(
+  () => import("@/components/GraphExplorer3D").then((m) => m.GraphExplorer3D),
+  { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading 3D graph…</div> },
+);
 const StoryPanel = dynamic(
-  () => import("@/components/StoryPanel"),
+  () => import("@/components/StoryPanel").then((m) => m.StoryPanel),
   { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading stories…</div> },
 );
 
 type Tab = "explorer" | "macro" | "story";
+type ViewMode = "2d" | "3d";
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("explorer");
+  const [viewMode, setViewMode] = useState<ViewMode>("2d");
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
@@ -53,10 +59,42 @@ export default function Home() {
       {/* Content */}
       <main className="flex-1 overflow-hidden">
         {tab === "explorer" && (
-          <GraphExplorer
-            selectedTime={selectedTime}
-            selectedClass={selectedClass}
-          />
+          <>
+            {/* 2D/3D toggle bar */}
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-border">
+              <button
+                onClick={() => setViewMode("2d")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "2d"
+                    ? "bg-blue-600 text-white"
+                    : "text-muted hover:text-primary hover:bg-slate-700"
+                }`}
+              >
+                2D View
+              </button>
+              <button
+                onClick={() => setViewMode("3d")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "3d"
+                    ? "bg-purple-600 text-white"
+                    : "text-muted hover:text-primary hover:bg-slate-700"
+                }`}
+              >
+                3D View
+              </button>
+            </div>
+            {viewMode === "2d" ? (
+              <GraphExplorer
+                timestep={selectedTime}
+                selectedClass={selectedClass}
+              />
+            ) : (
+              <GraphExplorer3D
+                timestep={selectedTime}
+                selectedClass={selectedClass}
+              />
+            )}
+          </>
         )}
         {tab === "macro" && (
           <div className="h-full">

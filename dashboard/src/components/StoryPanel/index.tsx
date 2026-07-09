@@ -5,6 +5,9 @@ import ForceGraph2D from "react-force-graph-2d";
 import { api, CytoscapeNode, CytoscapeEdge, StoryDetail, StorySummary } from "@/lib/graph-api";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
+  EASY: "bg-green-500/20 text-green-400 border-green-500/40",
+  AVERAGE: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40",
+  HARD: "bg-red-500/20 text-red-400 border-red-500/40",
   easy: "bg-green-500/20 text-green-400 border-green-500/40",
   average: "bg-yellow-500/20 text-yellow-400 border-yellow-500/40",
   hard: "bg-red-500/20 text-red-400 border-red-500/40",
@@ -16,7 +19,11 @@ const NODE_COLORS: Record<string, string> = {
   "3": "#6b7280",
 };
 
+type ForceNode = { id: string; class?: number };
+
 export function StoryPanel() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState({ width: 800, height: 600 });
   const [stories, setStories] = useState<StorySummary[]>([]);
   const [story, setStory] = useState<StoryDetail | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
@@ -25,14 +32,22 @@ export function StoryPanel() {
   const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const fgRef = useRef<import("react-force-graph-2d").ForceGraph2DInstance>(null);
 
-  // Load story list
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () =>
+      setDims({ width: el.clientWidth, height: el.clientHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     api.stories.list().then(setStories).catch((e) => setError((e as Error).message));
   }, []);
 
-  // Load story + subgraph when selected
   const selectStory = useCallback(
     async (id: string) => {
       setLoading(true);
@@ -46,7 +61,6 @@ export function StoryPanel() {
         setGraphNodes(subgraph.nodes);
         setGraphEdges(subgraph.edges);
         setCurrentStep(0);
-        // Highlight first step
         const firstStep = detail.steps?.[0];
         if (firstStep?.highlight_nodes) {
           setHighlightIds(new Set(firstStep.highlight_nodes.map(String)));
@@ -57,10 +71,9 @@ export function StoryPanel() {
         setLoading(false);
       }
     },
-    []
+    [],
   );
 
-  // Navigate steps
   const goStep = useCallback(
     (stepNum: number) => {
       if (!story) return;
@@ -72,20 +85,18 @@ export function StoryPanel() {
         setHighlightIds(new Set());
       }
     },
-    [story]
+    [story],
   );
 
-  const getNodeColor = (n: CytoscapeNode) => {
-    if (highlightIds.has(n.data.id)) return "#fbbf24";
-    const cls = String(n.data.class ?? "3");
+  const getNodeColor = (n: ForceNode) => {
+    if (highlightIds.has(n.id)) return "#fbbf24";
+    const cls = String(n.class ?? "3");
     return NODE_COLORS[cls] ?? "#6b7280";
   };
 
   return (
     <div className="flex h-full">
-      {/* Story list + narrative — 40% */}
       <div className="w-[40%] min-w-[320px] flex flex-col bg-[var(--bg-panel)] border-r border-[var(--border-color)]">
-        {/* Story selector */}
         <div className="p-4 border-b border-[var(--border-color)]">
           <h2 className="text-sm font-bold mb-3">Investigation Stories</h2>
           <div className="space-y-2 max-h-40 overflow-auto">
@@ -116,14 +127,12 @@ export function StoryPanel() {
           </div>
         </div>
 
-        {/* Narrative */}
         {story && (
           <div className="flex-1 p-4 overflow-auto space-y-4">
             <div className="text-xs leading-relaxed text-[var(--text-secondary)]">
               {story.narrative}
             </div>
 
-            {/* Steps */}
             <div className="space-y-2">
               {story.steps.map((step, i) => (
                 <button
@@ -139,13 +148,12 @@ export function StoryPanel() {
                     Step {step.step_num}: {step.title}
                   </div>
                   <div className="text-[var(--text-secondary)] mt-1">
-                    {step.narrative.slice(0, 120)}…
+                    {step.description.slice(0, 120)}…
                   </div>
                 </button>
               ))}
             </div>
 
-            {/* Step navigation */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => goStep(Math.max(0, currentStep - 1))}
@@ -177,8 +185,7 @@ export function StoryPanel() {
         )}
       </div>
 
-      {/* Graph — 60% */}
-      <div className="relative flex-1 bg-[var(--bg-primary)]">
+      <div ref={containerRef} className="relative flex-1 bg-[var(--bg-primary)]">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-primary)]/80 z-20">
             <div className="flex flex-col items-center gap-2">
@@ -198,7 +205,6 @@ export function StoryPanel() {
 
         {story && (
           <ForceGraph2D
-            ref={fgRef}
             graphData={{
               nodes: graphNodes.map((n) => ({
                 ...n.data,
@@ -215,12 +221,11 @@ export function StoryPanel() {
             nodeRelSize={4}
             linkWidth={0.5}
             backgroundColor="var(--bg-primary)"
-            width={"100%"}
-            height={"100%"}
+            width={dims.width}
+            height={dims.height}
           />
         )}
 
-        {/* Legend */}
         <div className="absolute bottom-4 right-4 z-10 flex gap-2 text-[10px] text-[var(--text-secondary)]">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-red-500" /> Illicit

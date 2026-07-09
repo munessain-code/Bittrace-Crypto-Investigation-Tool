@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import ForceGraph2D from "react-force-graph-2d";
-import { api, CytoscapeNode, CytoscapeEdge, NodeInfo } from "@/lib/graph-api";
+import ForceGraph3D from "react-force-graph-3d";
+import { api, CytoscapeNode, CytoscapeEdge, NodeInfo, NodeAttributes } from "@/lib/graph-api";
 import { NodeInspector } from "@/components/NodeInspector";
 
+// Shared class colors
 const NODE_COLORS: Record<string, string> = {
   "1": "#ef4444",
   "2": "#22c55e",
@@ -21,6 +22,7 @@ type Mode = "idle" | "tracing" | "loading";
 type ForceNode = { id: string; class?: number; timestep?: number } & Record<string, unknown>;
 type ForceLink = { source: string; target: string };
 
+// Build a compact hover tooltip from HOVER_ATTRIBUTES
 function buildTooltip(node: ForceNode): string {
   const lines: string[] = [];
   lines.push(`<b>TX ${node.id}</b>`);
@@ -60,7 +62,7 @@ function applyFilters(
   return { nodes: filteredNodes, edges: filteredEdges };
 }
 
-export function GraphExplorer({
+export function GraphExplorer3D({
   timestep,
   selectedClass,
 }: {
@@ -68,6 +70,7 @@ export function GraphExplorer({
   selectedClass: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<any>(null);
   const [dims, setDims] = useState({ width: 800, height: 600 });
   const [fullNodes, setFullNodes] = useState<CytoscapeNode[]>([]);
   const [fullEdges, setFullEdges] = useState<CytoscapeEdge[]>([]);
@@ -169,7 +172,7 @@ export function GraphExplorer({
     } catch {
       setSelectedNode({
         node_id: Number(node.id),
-        attributes: node,
+        attributes: node as NodeAttributes,
         in_degree: 0,
         out_degree: 0,
         degree: 0,
@@ -223,7 +226,7 @@ export function GraphExplorer({
           </div>
         )}
 
-        <ForceGraph2D
+        <ForceGraph3D
           graphData={{
             nodes: nodes.map((n) => ({
               ...n.data,
@@ -236,15 +239,17 @@ export function GraphExplorer({
           }}
           nodeColor={getNodeColor}
           linkColor={getEdgeColor}
-          nodeLabel={buildTooltip}
-          nodeRelSize={4}
+          nodeLabel={(n: ForceNode) => buildTooltip(n)}
+          nodeVal={4}
           linkWidth={0.5}
           onNodeClick={handleNodeClick}
           backgroundColor="var(--bg-primary)"
           width={dims.width}
           height={dims.height}
+          showNavInfo={false}
         />
 
+        {/* Search */}
         <div className="absolute top-4 right-4 z-10 flex gap-1">
           <input
             type="text"
@@ -262,6 +267,7 @@ export function GraphExplorer({
           </button>
         </div>
 
+        {/* Trace controls */}
         <div className="absolute bottom-4 left-4 z-10 flex gap-1">
           <button
             onClick={() => runTrace("downstream")}
@@ -299,6 +305,7 @@ export function GraphExplorer({
           </button>
         </div>
 
+        {/* Legend */}
         <div className="absolute bottom-4 right-4 z-10 flex gap-2 text-[10px] text-[var(--text-secondary)]">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-red-500" /> Illicit
@@ -315,6 +322,7 @@ export function GraphExplorer({
         </div>
       </div>
 
+      {/* Node Inspector sidebar */}
       <div className="w-[30%] min-w-[300px]">
         <NodeInspector
           node={selectedNode}

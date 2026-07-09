@@ -27,6 +27,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.loaders import get_duckdb_connection
+from src.data.attribute_catalog import (
+    CLASS_LABELS as CATALOG_CLASS_LABELS,
+    CLASS_COLORS as CATALOG_CLASS_COLORS,
+    resolve_class_label,
+    resolve_class_color,
+    HOVER_ATTRIBUTES,
+    CLICK_ATTRIBUTES,
+    DISPLAY_NAMES,
+)
 from src.graph.builders import build_tx_graph
 from src.graph.export import trace_to_cytoscape
 from src.graph.trace import trace_downstream, trace_upstream
@@ -43,11 +52,23 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Legacy difficulty aliases → story IDs (Phase 4 precomputed cases)
+DIFFICULTY_ALIASES = {
+    "easy": "peel-chain",
+    "average": "fan-out-split",
+    "hard": "consolidation",
+}
 
 # ---------------------------------------------------------------------------
 # Lazy graph & DB singletons
@@ -146,6 +167,29 @@ def graph_overview():
     }
 
 
+def _load_subgraph_json(path: Path) -> Optional[dict]:
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
+def _resolve_story(case_id: str):
+    """Resolve a case/story ID, including legacy difficulty aliases."""
+    try:
+        return get_story_by_id(case_id)
+    except KeyError:
+        pass
+
+    alias = DIFFICULTY_ALIASES.get(case_id.lower())
+    if alias:
+        try:
+            return get_story_by_id(alias)
+        except KeyError:
+            pass
+    return None
+
+
 @app.get("/graph/subgraph/{case_id}")
 def graph_subgraph(case_id: str):
     """Return a precomputed case-study subgraph as Cytoscape JSON.
@@ -153,16 +197,23 @@ def graph_subgraph(case_id: str):
     Uses the story YAML cases (peel-chain, fan-out-split, consolidation)
     and traces the appropriate direction for each.
     """
-    story = get_story_by_id(case_id)
+    story = _resolve_story(case_id)
     if story is None:
         # Try loading from docs/story_*_subgraph.json as fallback
-        json_path = PROJECT_ROOT / "docs" / f"story_{case_id}_subgraph.json"
-        if json_path.exists():
-            with open(json_path) as f:
-                return json.load(f)
-        # List available cases
+        payload = _load_subgraph_json(PROJECT_ROOT / "docs" / f"story_{case_id}_subgraph.json")
+        if payload is None:
+            payload = _load_subgraph_json(
+                PROJECT_ROOT / "data" / "subgraphs" / f"{case_id}_case.json"
+            )
+        if payload is not None:
+            return payload
         available = [s.id for s in load_all_stories()]
-        raise HTTPException(404, f"Case '{case_id}' not found. Available: {available}")
+        aliases = list(DIFFICULTY_ALIASES.keys())
+        raise HTTPException(
+            404,
+            f"Case '{case_id}' not found. Available stories: {available}; "
+            f"legacy aliases: {aliases}",
+        )
 
     G = get_graph()
     direction = story.steps[0].trace_direction if story.steps else "downstream"
@@ -246,18 +297,87 @@ def graph_trace(
 
 @app.get("/graph/node/{node_id}")
 def graph_node(node_id: int):
-    """Return attributes for a single node."""
+    """Return attributes for a single node.
+
+    Joins DuckDB transactions + tx_classes for full attribute data.
+    Returns HOVER_ATTRIBUTES and CLICK_ATTRIBUTES fields.
+    """
     G = get_graph()
     if node_id not in G:
         raise HTTPException(404, f"Node {node_id} not found")
 
-    attrs = _node_attr(G, node_id)
+    graph_attrs = _node_attr(G, node_id)
+
+    # DuckDB JOIN for interpretable attributes
+    db = get_db()
+    try:
+        row = db.execute("""
+            SELECT
+                t."txId",
+                c.class,
+                t."Time step",
+                t.total_BTC,
+                t.fees,
+                t.size,
+                t.num_input_addresses,
+                t.num_output_addresses,
+                t.in_txs_degree,
+                t.out_txs_degree,
+                t.in_BTC_total,
+                t.out_BTC_total
+            FROM transactions t
+            JOIN tx_classes c ON t."txId" = c."txId"
+            WHERE t."txId" = ?
+        """, [node_id]).fetchone()
+    except Exception:
+        row = None
+
+    # Build attributes dict
+    if row:
+        cls_val = int(row[1]) if row[1] is not None else 3
+        attrs = {
+            "txId": int(row[0]),
+            "class": cls_val,
+            "class_label": resolve_class_label(cls_val),
+            "class_color": resolve_class_color(cls_val),
+            "timestep": int(row[2]) if row[2] is not None else None,
+            "total_BTC": float(row[3]) if row[3] is not None else None,
+            "fees": float(row[4]) if row[4] is not None else None,
+            "size": float(row[5]) if row[5] is not None else None,
+            "num_input_addresses": int(row[6]) if row[6] is not None else None,
+            "num_output_addresses": int(row[7]) if row[7] is not None else None,
+            "in_txs_degree": int(row[8]) if row[8] is not None else None,
+            "out_txs_degree": int(row[9]) if row[9] is not None else None,
+            "in_BTC_total": float(row[10]) if row[10] is not None else None,
+            "out_BTC_total": float(row[11]) if row[11] is not None else None,
+        }
+    else:
+        attrs = graph_attrs or {}
+
     return {
         "node_id": node_id,
         "attributes": attrs,
         "in_degree": G.in_degree(node_id),
         "out_degree": G.out_degree(node_id),
         "degree": G.degree(node_id),
+    }
+
+
+@app.get("/graph/node/{node_id}/attributes")
+def graph_node_attributes_schema(node_id: int):
+    """Return the schema of available hover/click attributes.
+
+    Useful for frontend to know which fields to display.
+    """
+    G = get_graph()
+    if node_id not in G:
+        raise HTTPException(404, f"Node {node_id} not found")
+
+    return {
+        "node_id": node_id,
+        "hover_attributes": HOVER_ATTRIBUTES,
+        "click_attributes": CLICK_ATTRIBUTES,
+        "display_names": DISPLAY_NAMES,
     }
 
 
@@ -282,7 +402,7 @@ def list_stories():
 @app.get("/stories/{story_id}")
 def get_story(story_id: str):
     """Return a single story with its full step-by-step structure."""
-    story = get_story_by_id(story_id)
+    story = _resolve_story(story_id)
     if story is None:
         available = [s.id for s in load_all_stories()]
         raise HTTPException(404, f"Story '{story_id}' not found. Available: {available}")

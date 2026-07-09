@@ -14,6 +14,23 @@ const CLASS_BGS: Record<string, string> = {
   unknown: "bg-gray-500/20 border-gray-500/40",
 };
 
+// CLICK_ATTRIBUTES display mapping
+const ATTR_DISPLAY: Record<string, { label: string; format?: (v: unknown) => string }> = {
+  txId: { label: "TX ID" },
+  class_label: { label: "Class" },
+  class: { label: "Class ID" },
+  timestep: { label: "Timestep", format: (v) => `t=${v}` },
+  total_BTC: { label: "Total BTC", format: (v) => (typeof v === "number" ? v.toFixed(6) : String(v)) },
+  fees: { label: "Fees", format: (v) => (typeof v === "number" ? v.toFixed(8) : String(v)) },
+  size: { label: "TX Size (bytes)", format: (v) => (typeof v === "number" ? v.toFixed(1) : String(v)) },
+  num_input_addresses: { label: "Inputs" },
+  num_output_addresses: { label: "Outputs" },
+  in_BTC_total: { label: "Input BTC", format: (v) => (typeof v === "number" ? v.toFixed(6) : String(v)) },
+  out_BTC_total: { label: "Output BTC", format: (v) => (typeof v === "number" ? v.toFixed(6) : String(v)) },
+  in_txs_degree: { label: "Input TXs (graph)" },
+  out_txs_degree: { label: "Output TXs (graph)" },
+};
+
 export function NodeInspector({
   node,
   onTraceDown,
@@ -33,9 +50,27 @@ export function NodeInspector({
     );
   }
 
-  const clsLabel = (node.attributes?.class_label as string) ?? "unknown";
-  const clsColor = (node.attributes?.class_color as string) ?? "#6b7280";
-  const timestep = node.attributes?.timestep as number | undefined;
+  const attrs = node.attributes ?? {};
+  const clsLabel = (attrs.class_label as string) ?? "unknown";
+  const clsColor = (attrs.class_color as string) ?? "#6b7280";
+
+  // Build formatted attribute rows from CLICK_ATTRIBUTES
+  const attrRows = Object.entries(attrs)
+    .filter(([k]) => ![
+      "class_label",
+      "class_color",
+      "in_degree",
+      "out_degree",
+      "degree",
+      "txId",
+    ].includes(k))
+    .map(([k, v]) => {
+      const display = ATTR_DISPLAY[k];
+      return {
+        label: display?.label ?? k,
+        value: display?.format ? display.format(v) : String(v ?? "—"),
+      };
+    });
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-panel)] border-l border-[var(--border-color)] overflow-auto">
@@ -57,21 +92,31 @@ export function NodeInspector({
         </span>
       </div>
 
-      {/* Attributes */}
+      {/* Core attributes */}
       <div className="p-4 space-y-3">
         <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
           Attributes
         </h3>
         <div className="space-y-2">
-          {timestep && (
-            <AttrRow label="Timestep" value={`t=${timestep}`} />
-          )}
-          <AttrRow label="Class ID" value={String(node.attributes?.class ?? "—")} />
           <AttrRow label="Degree" value={String(node.degree)} />
           <AttrRow label="In-Degree" value={String(node.in_degree)} />
           <AttrRow label="Out-Degree" value={String(node.out_degree)} />
         </div>
       </div>
+
+      {/* Transaction details */}
+      {attrRows.length > 0 && (
+        <div className="p-4 border-t border-[var(--border-color)] space-y-3">
+          <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+            Transaction Details
+          </h3>
+          <div className="space-y-2">
+            {attrRows.map((row) => (
+              <AttrRow key={row.label} label={row.label} value={row.value} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="p-4 space-y-2 border-t border-[var(--border-color)]">
@@ -100,14 +145,20 @@ export function NodeInspector({
         </div>
       </div>
 
-      {/* Extra attributes */}
+      {/* Raw attributes */}
       <div className="p-4 border-t border-[var(--border-color)] flex-1">
         <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
           All Attributes
         </h3>
         <div className="max-h-40 overflow-auto text-[10px] font-mono space-y-0.5">
-          {Object.entries(node.attributes ?? {})
-            .filter(([k]) => !["class_label", "class_color"].includes(k))
+          {Object.entries(attrs)
+            .filter(([k]) => ![
+              "class_label",
+              "class_color",
+              "in_degree",
+              "out_degree",
+              "degree",
+            ].includes(k))
             .map(([k, v]) => (
               <div key={k} className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">{k}</span>
