@@ -15,12 +15,15 @@ Run:
 """
 
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+
+logger = logging.getLogger(__name__)
 
 # Project root so we can import src/
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -34,11 +37,15 @@ from src.data.attribute_catalog import (
     resolve_class_color,
     HOVER_ATTRIBUTES,
     CLICK_ATTRIBUTES,
+    ACCOUNT_LIST_LIMIT,
+    ACCOUNT_PROFILE_FIELDS,
+    ACCOUNT_EXCLUDED_PREFIXES,
     DISPLAY_NAMES,
 )
 from src.graph.builders import build_tx_graph
 from src.graph.export import trace_to_cytoscape
 from src.graph.trace import trace_downstream, trace_upstream
+from src.graph.hybrid import build_hybrid_subgraph
 from src.stories import load_all_stories, get_story_by_id
 
 # ---------------------------------------------------------------------------
@@ -50,6 +57,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Allow localhost, LAN IPs, and machine hostname — browser NetworkError
+# is almost always a missing Origin when the dashboard is opened via IP.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -57,7 +66,17 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "http://192.168.101.144:3000",
+        "http://192.168.101.144:3001",
+        "http://babestation:3000",
+        "http://babestation:3001",
     ],
+    allow_origin_regex=r"https?://("
+    r"localhost|127\.0\.0\.1|babestation|"
+    r"192\.168\.\d{1,3}\.\d{1,3}|"
+    r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+    r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"
+    r")(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -146,6 +165,164 @@ def _class_flow(G):
         key = f"{sc}->{dc}"
         flow[key] = flow.get(key, 0) + 1
     return flow
+
+
+def _get_accounts(node_id: int, db, timestep: Optional[int] = None):
+    """Fetch sender/receiver wallets for a transaction node.
+
+    Returns parties with profile fields merged onto each object (keyed by
+    address — never by parallel list index). Includes total counts when the
+    list is capped. No BTC / fee wallet fields.
+
+    Account details = wallets only, NO BTC balances, NO fees.
+    """
+    limit = ACCOUNT_LIST_LIMIT
+    profile_cols = ", ".join(f'w."{f["field"]}"' for f in ACCOUNT_PROFILE_FIELDS)
+    warnings: list[str] = []
+
+    def count_parties(table: str, addr_col: str) -> int:
+        try:
+            row = db.execute(
+                f'SELECT COUNT(*) FROM {table} WHERE "txId" = ?',
+                [node_id],
+            ).fetchone()
+            return int(row[0]) if row else 0
+        except Exception as e:
+            logger.warning("count_parties failed for %s tx=%s: %s", table, node_id, e)
+            warnings.append(f"count_{table}_failed")
+            return 0
+
+    def fetch_parties(table: str, addr_col: str) -> list[dict]:
+        try:
+            rows = db.execute(
+                f"""
+                SELECT
+                    a."{addr_col}",
+                    COALESCE(c.class, 3) AS class
+                FROM {table} a
+                LEFT JOIN wallet_classes c ON a."{addr_col}" = c.address
+                WHERE a."txId" = ?
+                ORDER BY c.class, a."{addr_col}"
+                LIMIT ?
+                """,
+                [node_id, limit],
+            ).fetchall()
+            return [
+                {
+                    "address": addr,
+                    "class_label": resolve_class_label(int(cls) if cls is not None else 3),
+                }
+                for addr, cls in rows
+            ]
+        except Exception as e:
+            logger.warning(
+                "fetch_parties failed table=%s tx=%s: %s", table, node_id, e
+            )
+            warnings.append(f"parties_{table}_failed")
+            return []
+
+    def fetch_profiles_by_address(addresses: list[str]) -> dict[str, dict]:
+        """Return {address: {profile fields...}} preferring TX timestep when set."""
+        if not addresses:
+            return {}
+        placeholders = ", ".join(["?"] * len(addresses))
+        # Prefer feature row at the transaction's timestep, else nearest then any
+        ts_order = (
+            f'ABS(COALESCE(w."Time step", 0) - {int(timestep)})'
+            if timestep is not None
+            else '0'
+        )
+        try:
+            rows = db.execute(
+                f"""
+                SELECT
+                    w.address,
+                    {profile_cols},
+                    w."Time step" AS _ts
+                FROM wallets w
+                WHERE w.address IN ({placeholders})
+                QUALIFY ROW_NUMBER() OVER (
+                    PARTITION BY w.address
+                    ORDER BY {ts_order} ASC, w."Time step" ASC
+                ) = 1
+                """,
+                addresses,
+            ).fetchall()
+        except Exception as e:
+            # Fallback without QUALIFY (older DuckDB) — first row per address
+            logger.warning("profile QUALIFY query failed, using simple fetch: %s", e)
+            try:
+                rows = db.execute(
+                    f"""
+                    SELECT w.address, {profile_cols}, w."Time step" AS _ts
+                    FROM wallets w
+                    WHERE w.address IN ({placeholders})
+                    """,
+                    addresses,
+                ).fetchall()
+            except Exception as e2:
+                logger.warning("fetch_profiles failed: %s", e2)
+                warnings.append("profiles_failed")
+                return {}
+
+        by_addr: dict[str, dict] = {}
+        for row in rows:
+            addr = row[0]
+            if addr in by_addr:
+                continue  # keep first (best-ranked) row
+            profile: dict = {"address": addr}
+            for i, field_def in enumerate(ACCOUNT_PROFILE_FIELDS):
+                raw = row[i + 1]
+                if raw is not None and not str(field_def["field"]).lower().startswith(
+                    ACCOUNT_EXCLUDED_PREFIXES
+                ):
+                    # Skip any accidental BTC/fee fields
+                    fname = field_def["field"]
+                    if fname.startswith("btc_") or fname.startswith("fees"):
+                        continue
+                    try:
+                        profile[fname] = float(raw)
+                    except (TypeError, ValueError):
+                        profile[fname] = raw
+            by_addr[addr] = profile
+        return by_addr
+
+    senders = fetch_parties("addr_tx_edges", "input_address")
+    receivers = fetch_parties("tx_addr_edges", "output_address")
+    sender_count = count_parties("addr_tx_edges", "input_address")
+    receiver_count = count_parties("tx_addr_edges", "output_address")
+
+    all_addrs = [p["address"] for p in senders] + [p["address"] for p in receivers]
+    profiles_by_addr = fetch_profiles_by_address(all_addrs)
+
+    def merge_parties(parties: list[dict]) -> list[dict]:
+        merged = []
+        for p in parties:
+            prof = profiles_by_addr.get(p["address"], {})
+            entry = {**prof, **p}  # party class_label wins over profile
+            # Drop any monetary keys that snuck in
+            for k in list(entry.keys()):
+                if k.startswith("btc_") or k.startswith("fees"):
+                    del entry[k]
+            merged.append(entry)
+        return merged
+
+    senders_m = merge_parties(senders)
+    receivers_m = merge_parties(receivers)
+
+    return {
+        "senders": senders_m,
+        "receivers": receivers_m,
+        "sender_count": sender_count,
+        "receiver_count": receiver_count,
+        # Back-compat: dict keyed by address (not parallel lists)
+        "profiles": {
+            "by_address": profiles_by_addr,
+            "senders": [profiles_by_addr.get(p["address"], {}) for p in senders_m],
+            "receivers": [profiles_by_addr.get(p["address"], {}) for p in receivers_m],
+        },
+        "warnings": warnings,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -353,13 +530,28 @@ def graph_node(node_id: int):
         }
     else:
         attrs = graph_attrs or {}
+        if attrs and "class" in attrs and "class_label" not in attrs:
+            attrs["class_label"] = resolve_class_label(attrs.get("class"))
+            attrs["class_color"] = resolve_class_color(attrs.get("class"))
+
+    ts = attrs.get("timestep")
+    try:
+        ts_int = int(ts) if ts is not None else None
+    except (TypeError, ValueError):
+        ts_int = None
+
+    out_deg = int(G.out_degree(node_id))
+    in_deg = int(G.in_degree(node_id))
 
     return {
         "node_id": node_id,
         "attributes": attrs,
-        "in_degree": G.in_degree(node_id),
-        "out_degree": G.out_degree(node_id),
-        "degree": G.degree(node_id),
+        "in_degree": in_deg,
+        "out_degree": out_deg,
+        "degree": int(G.degree(node_id)),
+        "is_fan_out": out_deg > 1,
+        "is_fan_in": in_deg > 1,
+        "accounts": _get_accounts(node_id, db, timestep=ts_int),
     }
 
 
@@ -379,6 +571,89 @@ def graph_node_attributes_schema(node_id: int):
         "click_attributes": CLICK_ATTRIBUTES,
         "display_names": DISPLAY_NAMES,
     }
+
+
+@app.get("/graph/hybrid")
+def graph_hybrid(
+    node_id: int = Query(..., description="Seed transaction ID"),
+    wallet_depth: int = Query(0, ge=0, le=2, description="0=parties only, 1=include neighbor TXs"),
+    max_wallets: int = Query(50, ge=5, le=200, description="Max wallets per side"),
+    max_txs: int = Query(100, ge=10, le=500, description="Max additional TX nodes"),
+):
+    """Hybrid TX↔wallet bipartite subgraph.
+
+    Returns a graph where:
+      - Nodes are prefixed: "tx:<id>" for transactions, "w:<addr>" for wallets
+      - Edges have role="input" (wallet→tx) or role="output" (tx→wallet)
+      - Wallet nodes: class_label only (NO btc_*, NO fees)
+      - Transaction nodes: include total_BTC/fees for hover
+    """
+    G = get_graph()
+    if node_id not in G:
+        raise HTTPException(404, f"Transaction {node_id} not found in graph")
+
+    db = get_db()
+    return build_hybrid_subgraph(
+        db=db,
+        tx_graph=G,
+        seed_tx=node_id,
+        wallet_depth=wallet_depth,
+        max_wallets=max_wallets,
+        max_txs=max_txs,
+    )
+
+
+@app.get("/graph/wallet/{wallet_address}")
+def graph_wallet(wallet_address: str):
+    """Return wallet profile (non-BTC fields only).
+
+    Returns account profile fields from wallets_features.
+    No btc_* or fees_* columns.
+    """
+    db = get_db()
+    try:
+        row = db.execute(
+            "SELECT class FROM wallet_classes WHERE address = ?",
+            [wallet_address],
+        ).fetchone()
+        cls = int(row[0]) if row and row[0] is not None else 3
+        class_label = resolve_class_label(cls)
+        class_color = resolve_class_color(cls)
+    except Exception:
+        cls = 3
+        class_label = "unknown"
+        class_color = "#6b7280"
+
+    profile_cols = ", ".join(f'w."{f["field"]}"' for f in ACCOUNT_PROFILE_FIELDS)
+    try:
+        row = db.execute(
+            f"SELECT w.address, {profile_cols} "
+            f"FROM wallets w WHERE w.address = ?",
+            [wallet_address],
+        ).fetchone()
+    except Exception:
+        row = None
+
+    profile: dict = {
+        "address": wallet_address,
+        "class": cls,
+        "class_label": class_label,
+        "class_color": class_color,
+    }
+
+    if row:
+        for i, field_def in enumerate(ACCOUNT_PROFILE_FIELDS):
+            raw = row[i + 1]
+            fname = field_def["field"]
+            if fname.startswith("btc_") or fname.startswith("fees"):
+                continue
+            if raw is not None:
+                try:
+                    profile[fname] = float(raw)
+                except (TypeError, ValueError):
+                    profile[fname] = raw
+
+    return profile
 
 
 @app.get("/stories")

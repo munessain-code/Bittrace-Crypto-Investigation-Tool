@@ -8,11 +8,20 @@ __pycache__/
 *$py.class
 *.so
 
-# Data (raw CSVs are large)
+# Data (raw CSVs are large — download separately)
 data/*.csv
 data/*.parquet
 data/*.db
 data/*.duckdb
+data/subgraphs/*.json
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+dashboard/.env
+dashboard/.env.local
+dashboard/.env.*.local
 
 # Jupyter
 .ipynb_checkpoints/

@@ -13,12 +13,16 @@ const GraphExplorer3D = dynamic(
   () => import("@/components/GraphExplorer3D").then((m) => m.GraphExplorer3D),
   { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading 3D graph…</div> },
 );
+const HybridExplorer = dynamic(
+  () => import("@/components/HybridExplorer").then((m) => m.HybridExplorer),
+  { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading hybrid graph…</div> },
+);
 const StoryPanel = dynamic(
   () => import("@/components/StoryPanel").then((m) => m.StoryPanel),
   { ssr: false, loading: () => <div className="p-8 text-center text-zinc-500">Loading stories…</div> },
 );
 
-type Tab = "explorer" | "macro" | "story";
+type Tab = "explorer" | "macro" | "wallets" | "story";
 type ViewMode = "2d" | "3d";
 
 export default function Home() {
@@ -28,21 +32,21 @@ export default function Home() {
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col h-screen bg-background text-primary font-sans overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 bg-surface border-b border-border">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full max-h-full bg-background text-primary font-sans overflow-hidden">
+      {/* Header — shrink-0 so it never steals graph space unpredictably */}
+      <header className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-2.5 bg-surface border-b border-border">
+        <div className="flex items-center gap-3 min-w-0">
           <span className="text-lg font-bold text-accent">BitTrace</span>
-          <span className="text-xs text-muted px-2 py-0.5 bg-slate-800 rounded-full">
+          <span className="text-xs text-muted px-2 py-0.5 bg-slate-800 rounded-full hidden sm:inline">
             Graph Explorer
           </span>
         </div>
-        <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
-          {(["explorer", "macro", "story"] as Tab[]).map((t) => (
+        <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg shrink-0">
+          {(["explorer", "macro", "wallets", "story"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 tab === t
                   ? "bg-accent text-accent-foreground"
                   : "text-muted hover:text-primary"
@@ -50,18 +54,19 @@ export default function Home() {
             >
               {t === "explorer" && "🔍 Explorer"}
               {t === "macro" && "📊 Macro"}
+              {t === "wallets" && "👛 Wallets"}
               {t === "story" && "📖 Story Mode"}
             </button>
           ))}
         </nav>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 overflow-hidden">
+      {/* Content fills remaining viewport height only */}
+      <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {tab === "explorer" && (
-          <>
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* 2D/3D toggle bar */}
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-border">
+            <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 bg-surface border-b border-border">
               <button
                 onClick={() => setViewMode("2d")}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
@@ -83,21 +88,23 @@ export default function Home() {
                 3D View
               </button>
             </div>
-            {viewMode === "2d" ? (
-              <GraphExplorer
-                timestep={selectedTime}
-                selectedClass={selectedClass}
-              />
-            ) : (
-              <GraphExplorer3D
-                timestep={selectedTime}
-                selectedClass={selectedClass}
-              />
-            )}
-          </>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {viewMode === "2d" ? (
+                <GraphExplorer
+                  timestep={selectedTime}
+                  selectedClass={selectedClass}
+                />
+              ) : (
+                <GraphExplorer3D
+                  timestep={selectedTime}
+                  selectedClass={selectedClass}
+                />
+              )}
+            </div>
+          </div>
         )}
         {tab === "macro" && (
-          <div className="h-full">
+          <div className="flex-1 min-h-0 overflow-auto">
             <MacroOverview
               onTimestepSelect={setSelectedTime}
               onClassSelect={setSelectedClass}
@@ -105,8 +112,13 @@ export default function Home() {
             />
           </div>
         )}
+        {tab === "wallets" && (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <HybridExplorer />
+          </div>
+        )}
         {tab === "story" && (
-          <div className="h-full">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <StoryPanel />
           </div>
         )}
