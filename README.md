@@ -34,19 +34,56 @@ If you are evaluating this as a hiring sample, please treat it as evidence of **
 ## Table of contents
 
 1. [This entire project was built with AI](#this-entire-project-was-built-with-ai)
-2. [Project overview](#project-overview)
-3. [Built with Grok Build + Hermes agents](#built-with-grok-build--hermes-agents)
-4. [What you can do in the demo](#what-you-can-do-in-the-demo)
-5. [Problem & dataset](#problem--dataset)
-6. [System architecture](#system-architecture)
-7. [Repository map (every folder)](#repository-map-every-folder)
-8. [Local machine & Hermes hosting](#local-machine--hermes-hosting)
-9. [Quick start](#quick-start)
-10. [API reference](#api-reference)
-11. [ML results snapshot](#ml-results-snapshot)
-12. [Implementation phases](#implementation-phases)
-13. [Agent workflow](#agent-workflow)
-14. [Citation & author](#citation--author)
+2. [Screenshots](#screenshots)
+3. [Project overview](#project-overview)
+4. [Built with Grok Build + Hermes agents](#built-with-grok-build--hermes-agents)
+5. [What you can do in the demo](#what-you-can-do-in-the-demo)
+6. [Problem & dataset](#problem--dataset)
+7. [System architecture](#system-architecture)
+8. [Repository map (every folder)](#repository-map-every-folder)
+9. [Local machine & Hermes hosting](#local-machine--hermes-hosting)
+10. [Quick start](#quick-start)
+11. [API reference](#api-reference)
+12. [ML results snapshot](#ml-results-snapshot)
+13. [Implementation phases](#implementation-phases)
+14. [Agent workflow](#agent-workflow)
+15. [Citation & author](#citation--author)
+
+---
+
+## Screenshots
+
+Captured from a live local run of the API + Next.js dashboard (Explorer, Macro, Story Mode).
+
+### Graph Explorer (2D) — node inspector
+
+Transaction subgraph with **Transaction details** (BTC, fees, size) and **Account details** (sender/receiver wallets, illicit labels, non-BTC activity stats). Expand depth/budget/accumulate controls along the bottom.
+
+![Graph Explorer 2D with node inspector](docs/screenshots/01-explorer-2d.png)
+
+### Trace Down + fan-out
+
+Illicit seed with **out-degree 3** (fan-out badge). **Trace Down** highlights the full multi-branch BFS tree (all edges), not a single peel-chain path.
+
+![Trace Down multi-branch fan-out](docs/screenshots/03-explorer-trace-down.png)
+
+### Macro overview
+
+Full-graph stats (~204K nodes / ~234K edges), class distribution (illicit / licit / unknown), class-to-class edge flows, and illicit activity by timestep.
+
+![Macro overview dashboard](docs/screenshots/05-macro-overview.png)
+
+### Story Mode
+
+Guided investigation narratives (peel chain, fan-out, consolidation) with step-through text and synchronized graph highlights.
+
+![Story Mode peel-chain investigation](docs/screenshots/06-story-mode.png)
+
+### 3D Explorer (timestep on Z)
+
+Same investigation controls as 2D; view toggle to **3D View**. Inspector still shows illicit TX + wallet accounts while the force layout uses timestep for depth.
+
+![3D Graph Explorer](docs/screenshots/04-explorer-3d.png)
 
 ---
 
