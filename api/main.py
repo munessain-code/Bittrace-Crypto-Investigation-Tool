@@ -57,8 +57,8 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Allow localhost, LAN IPs, and machine hostname — browser NetworkError
-# is almost always a missing Origin when the dashboard is opened via IP.
+# Local-dev CORS defaults. Private LAN ranges via regex for optional
+# same-network demos (no hard-coded hostnames or machine-specific IPs).
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -66,13 +66,9 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-        "http://192.168.101.144:3000",
-        "http://192.168.101.144:3001",
-        "http://babestation:3000",
-        "http://babestation:3001",
     ],
     allow_origin_regex=r"https?://("
-    r"localhost|127\.0\.0\.1|babestation|"
+    r"localhost|127\.0\.0\.1|"
     r"192\.168\.\d{1,3}\.\d{1,3}|"
     r"10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
     r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}"

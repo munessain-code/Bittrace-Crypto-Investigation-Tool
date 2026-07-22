@@ -3,7 +3,7 @@
  * Prefer NEXT_PUBLIC_API_URL; otherwise use the same hostname the page
  * was loaded on (so LAN IP / hostname access still reaches the API).
  *
- * Always returns a full URL with scheme, e.g. http://192.168.101.144:8000
+ * Always returns a full URL with scheme, e.g. http://localhost:8000
  * (never "http//..." or protocol-relative "//...").
  */
 function getApiBase(): string {

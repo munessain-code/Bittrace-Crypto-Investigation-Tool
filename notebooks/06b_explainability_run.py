@@ -9,7 +9,7 @@ Covers:
   5. Print summary table
 
 Run:
-    cd /home/eduardo/Documents/bittrace
+    cd /path/to/bittrace
     python notebooks/06b_explainability_run.py [--sample N]
 """
 

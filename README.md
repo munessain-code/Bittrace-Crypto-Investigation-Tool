@@ -23,9 +23,11 @@
 | Dataset and hardware choices | Built data loaders, graphs, ML training |
 | Phase priorities and attribute decisions | Implemented FastAPI + Next.js Explorer |
 | Review, acceptance, Telegram steering | Stories, tests, docs figures, GNN/RF runs |
-| **Grok Build:** plan, audits, hard bugfixes | **Hermes:** majority of feature delivery |
+| **Grok Build:** plan, audits, hard bugfixes | **Hermes:** majority of feature delivery (local Qwen) |
 
-If you are evaluating this as a hiring sample, please treat it as evidence of **AI-augmented development ability**: writing specs, decomposing work into phases, running agents, validating results, and remediating gaps — not as a claim of sole manual authorship of every file.
+**Hermes setup:** the coding agent is wired to a **locally hosted Qwen model** (served by **`llama-server`** with quantized GGUF weights on a local GPU). Agent work does not depend on a cloud chat API for that loop.
+
+If you are evaluating this as a hiring sample, please treat it as evidence of **AI-augmented development ability**: writing specs, decomposing work into phases, running agents on **self-hosted models**, validating results, and remediating gaps — not as a claim of sole manual authorship of every file.
 
 ---
 
@@ -108,7 +110,7 @@ This project was **designed and mostly implemented through an agentic workflow**
 1. **Grok Build** turned the idea into a durable **project plan** and copy-paste **Hermes phase prompts** (Telegram progress after each subtask).
 2. **Hermes** executed those phases and **built the majority of the application**.
 3. **Grok Build** re-entered as **auditor and remediator**: full-stack audits, silent failures, dashboard TypeScript/build fixes, LAN CORS, account API polish, expand accumulate, multi-branch trace highlight, fan-out UX.
-4. **Local Hermes LLM** (via `llama-server`, separate from coding agents) supports optional natural-language investigation features on this machine.
+4. **Hermes coding agents are powered by a local Qwen model** served with **`llama-server`** (GGUF on GPU). The same local-LLM stack can support optional investigation chat (Phase 9).
 
 ---
 
@@ -171,16 +173,25 @@ Labels: **1 = illicit**, **2 = licit**, **3 = unknown** (always mapped to words 
 └────────────────────────────────────────────────────────────┘
 ```
 
-**Agent / LLM side (build + optional inference):**
+**AI agents + local Qwen model (how Hermes runs on this project):**
 
 ```
-Telegram  ←→  Hermes gateway (local)
-                    │
-                    ├─► Coding agents (majority of app code)
-                    │
-                    └─► llama-server :8080  ← local GGUF (e.g. Qwen) on GPU
-                              optional investigation chat / reports
+Telegram / chat UI
+        │
+        ▼
+Hermes agent gateway  (local process on the workstation)
+        │
+        ├─► Coding agents (scaffold, implement features, tests)
+        │
+        └─► OpenAI-compatible API  →  llama-server (local)
+                    ▲
+                    │  loads quantized Qwen GGUF weights
+                    │  inference on local GPU (not cloud-hosted chat)
+                    ▼
+              Local Qwen model
 ```
+
+Hermes is **configured to use that local Qwen endpoint** as its LLM backend — agent planning, tool use, and code work run against a model you host yourself, not a third-party cloud API for the agent loop.
 
 ---
 
@@ -287,20 +298,34 @@ Start with `docs/methodology.md` and `docs/results.md`.
 
 ## Local machine & Hermes hosting
 
-Built and demoed on a **local workstation** (not cloud-first):
+Built and demoed on a **local workstation** (self-hosted AI stack — not a cloud-only demo).
+
+### Hermes agent + local Qwen (important)
+
+| Piece | Role |
+|-------|------|
+| **Hermes agent** | Multi-agent coding orchestrator (e.g. “Oz”) used to implement most of BitTrace |
+| **Where it runs** | On the same local machine as the project (gateway process; often Telegram-connected for progress) |
+| **LLM backend** | **Local Qwen** — not a remote SaaS chat API for the agent loop |
+| **How the model is served** | **`llama-server`** (OpenAI-compatible HTTP API) loads a **quantized Qwen GGUF** and serves completions/tools |
+| **Hardware for inference** | Local **NVIDIA GPU** for model inference (and optional GNN training) |
+
+In short: **Hermes is set up and driven by a Qwen model that you host yourself via `llama-server`.** That is the intentional architecture for this portfolio — privacy, cost control, and demonstrating full local agent ops.
+
+Grok Build (IDE agent) also works on this machine for planning and audits; it is separate from Hermes but part of the same AI-native workflow.
+
+### Generic environment (no machine-specific identifiers)
 
 | Component | Setup |
 |-----------|--------|
-| **Host** | Linux workstation (`babestation`) — high-RAM dual-Xeon-class machine |
-| **GPU** | NVIDIA **RTX 3090** (training / local LLM; dual-GPU limited by power/chassis) |
+| **OS** | Linux workstation with enough RAM for DuckDB + graph loads |
+| **GPU** | Local CUDA GPU for Qwen inference / training |
 | **Python** | `venv/` via **[uv](https://github.com/astral-sh/uv)** |
-| **Hermes gateway** | Local gateway, often Telegram-connected (orchestrator “Oz”) |
-| **Local LLM** | **`llama-server`** + quantized **Qwen** GGUF on **port 8080** |
-| **Model path (example)** | `~/models/qwen3.6-27b/…Q4_K_XL.gguf` |
-| **API** | uvicorn **:8000** (`--host 0.0.0.0` for LAN) |
-| **UI** | Next.js **:3001** |
+| **Hermes** | Local agent gateway → **local Qwen** through `llama-server` |
+| **BitTrace API** | uvicorn on port **8000** (prefer `127.0.0.1` unless you intentionally demo on a trusted LAN) |
+| **BitTrace UI** | Next.js on port **3001** |
 
-Grok Build uses the IDE/shell on the same machine: it **plans, audits, and patches**; Hermes **ships most features**.
+**Security note:** Binding with `--host 0.0.0.0` exposes the API on all interfaces **with no authentication**. Use `127.0.0.1` for solo local work; only bind to the LAN on a trusted network.
 
 ---
 
@@ -328,16 +353,22 @@ python data/download.py --check
 ### 3. Run API + dashboard
 
 ```bash
-# Terminal 1
+# Terminal 1 — prefer loopback unless you need LAN access
 source venv/bin/activate
-uvicorn api.main:app --port 8000 --host 0.0.0.0 --reload
+uvicorn api.main:app --port 8000 --host 127.0.0.1 --reload
 
 # Terminal 2
 cd dashboard && npm install && npm run dev
 ```
 
 Open **http://localhost:3001**.  
-Optional `dashboard/.env.local`: `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
+Optional `dashboard/.env.local` (gitignored): `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
+
+If you must demo from another device on a **trusted** LAN only:
+
+```bash
+uvicorn api.main:app --port 8000 --host 0.0.0.0 --reload   # no auth — do not expose publicly
+```
 
 ### 4. Tests
 
@@ -415,10 +446,10 @@ pytest tests/ -q
 **Built entirely with AI tooling under human direction:**
 
 - [Grok Build](https://x.ai/) — plan, audit, remediation, documentation  
-- **Hermes** multi-agent coding — majority of application code  
-- Local **`llama-server`** — optional investigation LLM  
+- **Hermes** multi-agent coding — majority of application code, **running against a local Qwen model**  
+- Local **`llama-server` + Qwen GGUF** — Hermes LLM backend (self-hosted inference)
 
-This repository is a **portfolio demonstration of AI-assisted software development**.
+This repository is a **portfolio demonstration of AI-assisted software development**, including operating a **local agent + local foundation model** stack.
 
 ### License / data notice
 
